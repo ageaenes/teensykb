@@ -1,4 +1,5 @@
 
+
 void setup() {
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
@@ -55,6 +56,7 @@ int previous[5][20]={
 };
 
 void loop() {
+  //Delays are neccesarry for stability
   delay(15);
   writePort(23,4);
   delay(15);
@@ -65,6 +67,7 @@ void loop() {
   writePort(22,3);
   delay(15);
   writePort(20,1);
+  
   
 }
 void writePort(int port, int y){
@@ -89,7 +92,7 @@ void writePort(int port, int y){
   readInputPort(18,y,17,port);
   digitalWrite(port,HIGH);
 }
-
+//Simply checking what the value is now, and what it was before
 void readInputPort(int port, int y,int x, int outputPort){
   if(digitalRead(port) == LOW){
     if( previous[y][x] == HIGH){
