@@ -47,14 +47,14 @@ int keyMap[5][20]={
   {KEY_LEFT_SHIFT,KEY_Z,KEY_X,KEY_C,KEY_V,KEY_B,KEY_N,KEY_M,KEY_COMMA,KEY_PERIOD,KEY_SLASH,EMPTY,EMPTY,KEY_RIGHT_SHIFT,KEYPAD_1,KEYPAD_2,KEYPAD_3,KEYPAD_ENTER},
   {KEY_LEFT_GUI,KEY_LEFT_ALT,FUNCTION,KEY_LEFT_CTRL,EMPTY,EMPTY,KEY_SPACE,EMPTY,KEY_BACKSLASH,KEY_LEFT,KEY_RIGHT,EMPTY,KEY_DOWN,KEY_UP,EMPTY,KEYPAD_0,KEYPAD_PERIOD}                         
 };
-//Needed in order to know if you are going to release the button or not, modifer keys gets pushed and released when turning of power on output.
-int previous[5][20]={
-  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
-  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
-  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
-  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
-  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH}                         
+int functionLayer[5][20]={
+  {KEY_ESC,KEY_1,KEY_2,KEY_3,KEY_4,KEY_5,KEY_6,KEY_7,KEY_8,KEY_9,KEY_0,KEY_MINUS,KEY_EQUAL,KEY_BACKSPACE,KEY_INSERT,KEY_HOME,KEY_PAGE_UP,KEYPAD_ASTERIX},
+  {KEY_TAB,KEY_Q,KEY_W,KEY_E,KEY_R,KEY_T,KEY_Y,KEY_U,KEY_I,KEY_O,KEY_P,KEY_LEFT_BRACE,KEY_RIGHT_BRACE,KEY_ENTER,KEY_DELETE,KEY_END,KEY_PAGE_DOWN,KEYPAD_PLUS},
+  {KEY_CAPS_LOCK,KEY_A,KEY_S,KEY_D,KEY_F,KEY_G,KEY_H,KEY_J,KEY_K,KEY_L,KEY_SEMICOLON,EMPTY,KEY_QUOTE,EMPTY,KEYPAD_4,KEY_UP,KEYPAD_6,KEYPAD_PLUS},
+  {KEY_LEFT_SHIFT,KEY_Z,KEY_X,KEY_C,KEY_V,KEY_B,KEY_N,KEY_M,KEY_COMMA,KEY_PERIOD,KEY_SLASH,EMPTY,EMPTY,KEY_RIGHT_SHIFT,KEY_LEFT,KEY_DOWN,KEY_RIGHT,KEYPAD_ENTER},
+  {KEY_LEFT_GUI,KEY_LEFT_ALT,EMPTY,KEY_LEFT_CTRL,EMPTY,EMPTY,KEY_SPACE,EMPTY,KEY_BACKSLASH,KEY_LEFT,KEY_RIGHT,EMPTY,KEY_DOWN,KEY_UP,EMPTY,KEYPAD_0,KEYPAD_PERIOD}                         
 };
+//Needed in order to know if you are going to release the button or not, modifer keys gets pushed and released when turning of power on output.
 int lastDebounceTime[5][20]={
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -77,13 +77,13 @@ int buttonState[5][20]={
   {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
   {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH}                         
 };
-int debounceDelay=1;
+int debounceDelay=1;//mix with this if you get bad readings.
 void loop() {
   //Delays are neccesarry for stability
   for(int i=19;i<24;i++){
     digitalWriteFast(i,LOW);    
     for(int ii=0;ii<19;ii++){
-      if(ii == 13){
+      if(ii == 13){ //Keeping pin 13 for LED
         continue;
       }
       int reading = digitalReadFast(ii);    
@@ -95,12 +95,20 @@ void loop() {
         if(reading != buttonState[getRow(i)][getCol(ii)]){
           buttonState[getRow(i)][getCol(ii)] = reading;         
           if(reading == LOW){
-            Keyboard.press(keyMap[getRow(i)][getCol(ii)]);
-            previous[getRow(i)][getCol(ii)] = LOW;
+            //Serial.println("pushed");
+            //Serial.println(getRow(i)); //Debugging purposes
+            //Serial.println(getCol(ii));
+            pressKey(getRow(i),getCol(ii));
+            digitalWriteFast(i,HIGH);
+            goto ENDMATRIX;
           }
           else{
-            Keyboard.release(keyMap[getRow(i)][getCol(ii)]);
-            previous[getRow(i)][getCol(ii)] = HIGH;
+            //Serial.println("released");
+            //Serial.println(getRow(i)); //Debugging purposes
+            //Serial.println(getCol(ii));
+            releaseKey(getRow(i),getCol(ii));
+            digitalWriteFast(i,HIGH);
+            goto ENDMATRIX;
           }
         }      
       }
@@ -165,4 +173,31 @@ int getCol(int port){
       return 17;
   }
   return 100;  
+}
+bool functionLayerActive = false;
+void pressKey(int row, int col){   
+  
+  if(keyMap[row][col] == FUNCTION && !functionLayerActive){
+    functionLayerActive = true;
+    //Serial.println("function layer actived");   
+  }else{
+    if(functionLayerActive){
+      Keyboard.press(functionLayer[row][col]);
+    }else{
+      Keyboard.press(keyMap[row][col]);
+    }
+  }
+}
+void releaseKey(int row, int col){
+   
+  if(keyMap[row][col] == FUNCTION && functionLayerActive){
+     functionLayerActive = false;
+     //Serial.println("function layer deactived");   
+  }else{
+    if(functionLayerActive){
+      Keyboard.release(functionLayer[row][col]);
+    }else{
+      Keyboard.release(keyMap[row][col]);
+    }
+  }
 }
