@@ -31,12 +31,13 @@ void setup() {
   
   
   Keyboard.begin();
-  digitalWrite(19,LOW);
-  digitalWrite(20,LOW);
-  digitalWrite(21,LOW);
-  digitalWrite(22,LOW);
-  digitalWrite(23,LOW);
+  digitalWrite(19,HIGH);
+  digitalWrite(20,HIGH);
+  digitalWrite(21,HIGH);
+  digitalWrite(22,HIGH);
+  digitalWrite(23,HIGH);
 }
+int ENDMATRIX = 99;
 int FUNCTION = 77;
 int EMPTY=0;
 int keyMap[5][20]={
@@ -54,53 +55,115 @@ int previous[5][20]={
   {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
   {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH}                         
 };
+int lastDebounceTime[5][20]={
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}                         
+};
 
+int lastButtonState[5][20]={
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH}                         
+};
+int buttonState[5][20]={
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH},
+  {HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH,HIGH}                         
+};
+int debounceDelay=1;
 void loop() {
   //Delays are neccesarry for stability
-  delay(15);
-  writePort(23,4);
-  delay(15);
-  writePort(21,2);
-  delay(15);
-  writePort(19,0);
-  delay(15);
-  writePort(22,3);
-  delay(15);
-  writePort(20,1);
-  
-  
-}
-void writePort(int port, int y){
-  digitalWrite(port,LOW);
-  readInputPort(0,y,0,port);
-  readInputPort(1,y,1,port);
-  readInputPort(2,y,2,port);
-  readInputPort(3,y,3,port);
-  readInputPort(4,y,4,port);
-  readInputPort(5,y,5,port);
-  readInputPort(6,y,6,port);
-  readInputPort(7,y,7,port);
-  readInputPort(8,y,8,port);
-  readInputPort(9,y,9,port);
-  readInputPort(10,y,10,port);
-  readInputPort(11,y,11,port);
-  readInputPort(12,y,12,port);
-  readInputPort(14,y,13,port);
-  readInputPort(15,y,14,port);
-  readInputPort(16,y,15,port);
-  readInputPort(17,y,16,port);
-  readInputPort(18,y,17,port);
-  digitalWrite(port,HIGH);
-}
-//Simply checking what the value is now, and what it was before
-void readInputPort(int port, int y,int x, int outputPort){
-  if(digitalRead(port) == LOW){
-    if( previous[y][x] == HIGH){
-      Keyboard.press(keyMap[y][x]);
-      previous[y][x] = LOW;
+  for(int i=19;i<24;i++){
+    delay(6);
+    digitalWriteFast(i,LOW);    
+    for(int ii=0;ii<19;ii++){
+      if(ii == 13){
+        continue;
+      }
+      int reading = digitalReadFast(ii);    
+      if(reading != lastButtonState[getRow(i)][getCol(ii)]){
+        lastDebounceTime[getRow(i)][getCol(ii)] = millis();
+        lastButtonState[getRow(i)][getCol(ii)]=reading;     
+      }    
+      if((millis() - lastDebounceTime[getRow(i)][getCol(ii)]) > debounceDelay){      
+        if(reading != buttonState[getRow(i)][getCol(ii)]){
+          buttonState[getRow(i)][getCol(ii)] = reading;         
+          if(reading == LOW){
+            Keyboard.press(keyMap[getRow(i)][getCol(ii)]);
+            previous[getRow(i)][getCol(ii)] = LOW;
+          }
+          else{
+            Keyboard.release(keyMap[getRow(i)][getCol(ii)]);
+            previous[getRow(i)][getCol(ii)] = HIGH;
+          }
+        }      
+      }
     }
-  }else if(digitalRead(port) == HIGH && previous[y][x] == LOW){
-      Keyboard.release(keyMap[y][x]);
-      previous[y][x] = HIGH; 
-    }
+    digitalWriteFast(i,HIGH);
+  }
+  ENDMATRIX:;
+}
+int getRow(int port){
+  switch(port){
+    case 19:
+      return 0;
+    case 20:
+      return 1;
+    case 21:
+      return 2;
+    case 22:
+      return 3;
+    case 23:
+      return 4;
+  }
+  return 100;  
+}
+
+int getCol(int port){
+  switch(port){
+    case 0:
+      return 0;
+    case 1:
+      return 1;
+    case 2:
+      return 2;
+    case 3:
+      return 3;
+    case 4:
+      return 4;
+    case 5:
+      return 5;
+    case 6:
+      return 6;
+    case 7:
+      return 7;
+    case 8:
+      return 8;
+    case 9:
+      return 9;
+    case 10:
+      return 10;
+    case 11:
+      return 11;
+    case 12:
+      return 12;
+    case 14:
+      return 13;
+    case 15:
+      return 14;
+    case 16:
+      return 15;
+    case 17:
+      return 16;
+    case 18:
+      return 17;
+  }
+  return 100;  
 }
