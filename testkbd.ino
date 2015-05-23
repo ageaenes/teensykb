@@ -79,9 +79,9 @@ int buttonState[5][20]={
 };
 int debounceDelay=1;//mix with this if you get bad readings.
 void loop() {
-  //Delays are neccesarry for stability
   for(int i=19;i<24;i++){
-    digitalWriteFast(i,LOW);    
+    digitalWriteFast(i,LOW);
+    delay(1);// delay needed for stability.
     for(int ii=0;ii<19;ii++){
       if(ii == 13){ //Keeping pin 13 for LED
         continue;
